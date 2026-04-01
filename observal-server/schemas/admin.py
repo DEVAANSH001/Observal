@@ -23,3 +23,17 @@ class UserAdminResponse(BaseModel):
 
 class UserRoleUpdate(BaseModel):
     role: str
+
+
+class UserCreateRequest(BaseModel):
+    email: str
+    name: str
+    role: str = "developer"
+
+
+class UserCreateResponse(BaseModel):
+    id: uuid.UUID
+    email: str
+    name: str
+    role: str
+    api_key: str

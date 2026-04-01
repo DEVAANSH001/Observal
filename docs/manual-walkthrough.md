@@ -46,14 +46,17 @@ Wait for all services to be healthy:
 
 ```bash
 docker compose ps
-# All 3 services should be "running"
+# All 4 services should be "running"
 ```
 
-Verify the API is up:
+Verify the API and Web UI are up:
 
 ```bash
 curl http://localhost:8000/health
 # {"status":"ok"}
+
+# Open the Web UI
+open http://localhost:3000
 ```
 
 ### 1.4 Install the CLI
@@ -591,6 +594,32 @@ observal feedback <mcp-id>
 #   ★★★★☆ — Great tool, fast responses
 #   ★★★☆☆ — Needs better error handling
 ```
+
+---
+
+---
+
+## Part 8: Web UI
+
+Everything above can also be done through the web dashboard at `http://localhost:3000`.
+
+### 8.1 Login
+
+Open `http://localhost:3000/login` and enter your API key.
+
+### 8.2 Pages
+
+| Page | URL | Description |
+|---|---|---|
+| Overview | `/` | Enterprise dashboard — summary cards, top MCPs/agents |
+| MCP Registry | `/mcps` | Browse, search, filter MCP servers |
+| MCP Detail | `/mcps/{id}` | Full details, install config, feedback |
+| Agent Registry | `/agents` | Browse, search agents |
+| Agent Detail | `/agents/{id}` | Full details, linked MCPs, goal template, install, feedback |
+| Agent Eval | `/agents/{id}/eval` | Run evaluations, view scorecards |
+| Reviews | `/admin/reviews` | Approve/reject pending submissions (admin) |
+| Settings | `/admin/settings` | Enterprise configuration (admin) |
+| Users | `/admin/users` | User management and role assignment (admin) |
 
 ---
 

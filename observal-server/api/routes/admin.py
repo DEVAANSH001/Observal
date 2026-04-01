@@ -1,3 +1,5 @@
+import hashlib
+import secrets
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -5,9 +7,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, get_db
+from config import settings
 from models.enterprise_config import EnterpriseConfig
 from models.user import User, UserRole
-from schemas.admin import EnterpriseConfigResponse, EnterpriseConfigUpdate, UserAdminResponse, UserRoleUpdate
+from schemas.admin import EnterpriseConfigResponse, EnterpriseConfigUpdate, UserAdminResponse, UserCreateRequest, UserCreateResponse, UserRoleUpdate
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 
@@ -91,6 +94,37 @@ async def list_users(
     _require_admin(current_user)
     result = await db.execute(select(User).order_by(User.created_at.desc()))
     return [UserAdminResponse.model_validate(u) for u in result.scalars().all()]
+
+
+@router.post("/users", response_model=UserCreateResponse)
+async def create_user(
+    req: UserCreateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Admin creates a new user and gets back their API key."""
+    _require_admin(current_user)
+
+    existing = await db.execute(select(User).where(User.email == req.email))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    try:
+        role = UserRole(req.role)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Invalid role. Must be one of: {[r.value for r in UserRole]}")
+
+    api_key = secrets.token_hex(settings.API_KEY_LENGTH)
+    key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+
+    user = User(email=req.email, name=req.name, role=role, api_key_hash=key_hash)
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+
+    return UserCreateResponse(
+        id=user.id, email=user.email, name=user.name, role=user.role.value, api_key=api_key,
+    )
 
 
 @router.put("/users/{user_id}/role", response_model=UserAdminResponse)

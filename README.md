@@ -32,7 +32,9 @@ Observal solves all of these as a single, self-hosted platform.
 | Backend API | Python, FastAPI, Uvicorn |
 | Database | PostgreSQL 16 (primary), ClickHouse (telemetry) |
 | ORM | SQLAlchemy (async) + AsyncPG |
+| Web UI | Next.js 15, React, TypeScript, Tailwind CSS |
 | CLI | Python, Typer, Rich |
+| Eval Engine | AWS Bedrock / OpenAI-compatible LLMs |
 | Deployment | Docker Compose |
 | Validation | Pydantic, GitPython |
 
@@ -76,6 +78,7 @@ docker compose up --build -d
 
 This starts:
 - **observal-api** on `http://localhost:8000`
+- **observal-web** on `http://localhost:3000`
 - **PostgreSQL** on port `5432`
 - **ClickHouse** on port `8123`
 
@@ -166,9 +169,14 @@ Observal/
 │   │   └── routes/           # API route handlers
 │   ├── models/               # SQLAlchemy database models
 │   ├── schemas/              # Pydantic request/response schemas
-│   ├── services/             # Business logic (validation, config generation)
+│   ├── services/             # Business logic (validation, config generation, eval)
 │   ├── main.py               # App entrypoint
 │   └── config.py             # Settings
+├── observal-web/             # Next.js web UI
+│   └── src/
+│       ├── app/              # App Router pages
+│       ├── components/       # Shared components
+│       └── lib/              # API client, auth context
 ├── observal_cli/             # Typer CLI application
 │   ├── main.py               # CLI commands
 │   ├── client.py             # HTTP client wrapper
@@ -176,10 +184,13 @@ Observal/
 ├── docker/
 │   ├── docker-compose.yml    # Full service stack
 │   ├── Dockerfile.api        # API container
-│   └── nginx.conf            # Reverse proxy config
+│   └── Dockerfile.web        # Web UI container
 ├── tests/
-│   └── test_phase_1_2.sh     # Integration test suite
-├── docs/                     # Architecture and planning docs
+│   ├── test_phase_1_2.sh     # Phase 1-2 integration tests
+│   ├── test_phase_3_4.sh     # Phase 3-4 integration tests
+│   ├── test_phase_5_6.sh     # Phase 5-6 integration tests
+│   └── test_phase_7_8.sh     # Phase 7-8 integration tests
+├── docs/                     # Architecture, test plans, checkpoints
 ├── .env.example              # Environment variable template
 └── pyproject.toml            # CLI package config
 ```
@@ -206,12 +217,12 @@ Observal is being developed in 8 phases:
 
 - [x] **Phase 1** — Foundation (Auth, Docker stack, CLI skeleton)
 - [x] **Phase 2** — MCP Registry (Submit, validate, review, install)
-- [ ] **Phase 3** — Agent Registry
-- [ ] **Phase 4** — Hooks & Telemetry Ingestion
-- [ ] **Phase 5** — Dashboards
-- [ ] **Phase 6** — Feedback Portal
-- [ ] **Phase 7** — SLM Evaluation Engine
-- [ ] **Phase 8** — Web UI
+- [x] **Phase 3** — Agent Registry
+- [x] **Phase 4** — Hooks & Telemetry Ingestion
+- [x] **Phase 5** — Dashboards
+- [x] **Phase 6** — Feedback Portal
+- [x] **Phase 7** — SLM Evaluation Engine
+- [x] **Phase 8** — Web UI
 
 See [`development-plan.md`](development-plan.md) for the full roadmap.
 
