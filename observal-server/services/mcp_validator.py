@@ -3,11 +3,32 @@ import re
 import shutil
 import tempfile
 from pathlib import Path
+from urllib.parse import urlparse
 
 from git import Repo
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.mcp import McpListing, McpValidationResult
+
+ALLOWED_SCHEMES = {"https", "http"}
+BLOCKED_SCHEMES = {"file", "ftp", "ssh", "git"}
+
+
+def _validate_git_url(url: str) -> str | None:
+    """Returns error message if URL is unsafe, None if OK."""
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return "Invalid URL"
+    if parsed.scheme not in ALLOWED_SCHEMES:
+        return f"URL scheme '{parsed.scheme}' not allowed. Use https://"
+    if not parsed.hostname:
+        return "URL has no hostname"
+    # Block internal/private IPs
+    hostname = parsed.hostname.lower()
+    if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "::1") or hostname.startswith("10.") or hostname.startswith("192.168.") or hostname.startswith("172."):
+        return "Internal/private URLs not allowed"
+    return None
 
 
 async def run_validation(listing: McpListing, db: AsyncSession):
@@ -25,6 +46,11 @@ async def run_validation(listing: McpListing, db: AsyncSession):
 
 
 async def _clone_and_inspect(listing: McpListing, db: AsyncSession, tmp_dir: str) -> Path | None:
+    url_err = _validate_git_url(listing.git_url)
+    if url_err:
+        db.add(McpValidationResult(listing_id=listing.id, stage="clone_and_inspect", passed=False, details=url_err))
+        await db.commit()
+        return None
     try:
         Repo.clone_from(listing.git_url, tmp_dir, depth=1)
     except Exception as e:
@@ -129,6 +155,9 @@ async def _manifest_validation(listing: McpListing, db: AsyncSession, entry_poin
 
 async def analyze_repo(git_url: str) -> dict:
     """Clone and analyze a repo without creating a listing. Returns extracted metadata."""
+    url_err = _validate_git_url(git_url)
+    if url_err:
+        return {"name": "", "description": "", "version": "0.1.0", "tools": []}
     tmp_dir = tempfile.mkdtemp(prefix="observal_analyze_")
     try:
         Repo.clone_from(git_url, tmp_dir, depth=1)

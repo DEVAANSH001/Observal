@@ -127,11 +127,11 @@ async def delete_mcp(
     if listing.submitted_by != current_user.id and current_user.role.value != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    # Delete related records
-    for model, col in [(McpDownload, McpDownload.listing_id), (Feedback, Feedback.listing_id)]:
-        rows = (await db.execute(select(model).where(col == listing_id))).scalars().all()
-        for r in rows:
-            await db.delete(r)
+    # Delete related records with correct type filter
+    for r in (await db.execute(select(Feedback).where(Feedback.listing_id == listing_id, Feedback.listing_type == "mcp"))).scalars().all():
+        await db.delete(r)
+    for r in (await db.execute(select(McpDownload).where(McpDownload.listing_id == listing_id))).scalars().all():
+        await db.delete(r)
 
     await db.delete(listing)
     await db.commit()

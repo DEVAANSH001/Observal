@@ -27,7 +27,7 @@ class EvalRun(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    scorecards: Mapped[list["Scorecard"]] = relationship(back_populates="eval_run", lazy="noload", cascade="all, delete-orphan")
+    scorecards: Mapped[list["Scorecard"]] = relationship(back_populates="eval_run", lazy="raise", cascade="all, delete-orphan")
 
 
 class Scorecard(Base):

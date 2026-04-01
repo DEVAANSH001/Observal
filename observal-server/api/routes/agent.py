@@ -39,7 +39,7 @@ async def _load_agent(db: AsyncSession, *where_clauses) -> Agent | None:
 
 def _agent_to_response(agent: Agent) -> AgentResponse:
     mcp_links = [
-        McpLinkResponse(mcp_listing_id=link.mcp_listing_id, mcp_name=link.mcp_listing.name, order=link.order)
+        McpLinkResponse(mcp_listing_id=link.mcp_listing_id, mcp_name=link.mcp_listing.name if link.mcp_listing else "(deleted)", order=link.order)
         for link in agent.mcp_links
     ]
     goal_template = None
@@ -222,11 +222,16 @@ async def delete_agent(
     if agent.created_by != current_user.id and current_user.role.value != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    # Delete related records
-    for model, col in [(AgentDownload, AgentDownload.agent_id), (Feedback, Feedback.listing_id), (Scorecard, Scorecard.agent_id), (EvalRun, EvalRun.agent_id)]:
-        rows = (await db.execute(select(model).where(col == agent_id))).scalars().all()
-        for r in rows:
-            await db.delete(r)
+    # Delete related records with correct type filters
+    for r in (await db.execute(select(Feedback).where(Feedback.listing_id == agent_id, Feedback.listing_type == "agent"))).scalars().all():
+        await db.delete(r)
+    for r in (await db.execute(select(Scorecard).where(Scorecard.agent_id == agent_id))).scalars().all():
+        await db.delete(r)
+    for r in (await db.execute(select(EvalRun).where(EvalRun.agent_id == agent_id))).scalars().all():
+        await db.delete(r)
+    for r in (await db.execute(select(AgentDownload).where(AgentDownload.agent_id == agent_id))).scalars().all():
+        await db.delete(r)
+    # AgentMcpLink, AgentGoalTemplate, AgentGoalSection handled by cascade="all, delete-orphan"
 
     await db.delete(agent)
     await db.commit()

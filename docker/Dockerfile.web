@@ -8,11 +8,12 @@ RUN npm ci
 COPY observal-web/ .
 
 ENV NEXT_TELEMETRY_DISABLED=1
-ARG NEXT_PUBLIC_API_URL=http://observal-api:8000
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 RUN npm run build
 
 EXPOSE 3000
+
+# API_INTERNAL_URL is a runtime env var (not NEXT_PUBLIC_), resolved server-side by rewrites
+ENV API_INTERNAL_URL=http://observal-api:8000
 
 CMD ["npm", "start"]

@@ -3,7 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    // Server-side proxy: browser calls /api/* → Next.js server proxies to the API
+    const apiUrl = process.env.API_INTERNAL_URL || "http://observal-api:8000";
     return [
       {
         source: "/api/:path*",
